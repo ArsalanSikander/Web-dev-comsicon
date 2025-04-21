@@ -1,9 +1,24 @@
-"use server"
+// src/app/login/page.tsx
+import { Metadata } from 'next';
+import LoginForm from '../components/auth/LoginForm';
 
-export default async function loginPage(){
-    return(
-        <>
-            <p>Login page</p>
-        </>
-    )
+export const metadata: Metadata = {
+  title: 'Log In | Project Management',
+  description: 'Log in to your account',
+};
+
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="text-center text-3xl font-extrabold text-gray-900">
+          Log in to your account
+        </h2>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <LoginForm />
+      </div>
+    </div>
+  );
 }
