@@ -22,7 +22,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <SocketProvider>
           <AuthProvider>
-              <div className="flex flex-row justify-between items-center h-[10vh] p-[1vw]">
+              {/* <div className="flex flex-row justify-between items-center h-[10vh] p-[1vw]">
                 <p>Collab Sphere</p>
                 <div className="flex flex-row w-[20vw] justify-around items-center">
                   <p>Route 1</p>
@@ -31,7 +31,7 @@ export default function RootLayout({
                 <div>
                   Logout button
                 </div>
-              </div>
+              </div> */}
               {children}
           </AuthProvider>
         </SocketProvider>
