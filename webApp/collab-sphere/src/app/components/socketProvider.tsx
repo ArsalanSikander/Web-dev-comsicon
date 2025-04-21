@@ -18,11 +18,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     useEffect(() => {
         async function setupSocket() {
-            let connString = `${process.env.NEXT_PUBLIC_CURR_IP}`;
-            console.log("My own ip is: " + process.env.NEXT_PUBLIC_CURR_IP)
-            console.log("Socket server will use this is connString: " + process.env.NEXT_PUBLIC_CURR_IP);
-
-            const socketInstance = io(process.env.NEXT_PUBLIC_SOCK_IP,
+            let connString = `localhost:3006`;
+            const socketInstance = io(connString,
                 {
                     transports: ["websocket"]
                 });
