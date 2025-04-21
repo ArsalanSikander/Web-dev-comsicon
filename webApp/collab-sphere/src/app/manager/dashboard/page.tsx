@@ -1,10 +1,22 @@
 "use client"; // Required for hooks and event handlers
 
 import React, { useState, FormEvent, useEffect, ChangeEvent } from 'react';
+import { Types } from 'mongoose';
 
 interface Member {
-    id: string;
+    id: string,
+    name: string,
+}
+
+interface IUser extends Document {
+    id: string,
     name: string;
+    email: string;
+    password: string;
+    role: 'Manager' | 'TeamMember';
+    avatar?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 interface Task {
@@ -13,6 +25,11 @@ interface Task {
     taskDeadline: string;
     priority: 'Low' | 'Medium' | 'High';
     assignedMemberIds: string[];
+}
+
+interface projectInterface {
+    name: string,
+    description: string
 }
 
 interface NewProjectData {
@@ -33,6 +50,46 @@ const ProjectManagementPage: React.FC = () => {
     // --- State for Tab Navigation ---
     const [activeTab, setActiveTab] = useState<'view' | 'create'>('view'); // Default to 'view'
 
+    const [projects, setProjects] = useState<projectInterface[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const fetchProjectData = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch('/api/get-projects');
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch data');
+            }
+
+            const result = await response.json();
+            setProjects(result);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const [teamMembers, setTeamMembers] = useState<IUser[]>([])
+
+    const getTeamMembers = async () => {
+        try {
+            const response = await fetch('/api/get-team-members')
+            if (!response.ok) {
+                throw new Error('Failed to fetch data');
+            }
+            const result = await response.json();
+            setAvailableMembers(result);
+            setTeamMembers(result);
+        }
+        catch (err: any) {
+
+        }
+    }
+
     // --- State for Create Project Form ---
     const [projectName, setProjectName] = useState<string>('');
     const [projectDescription, setProjectDescription] = useState<string>('');
@@ -42,14 +99,16 @@ const ProjectManagementPage: React.FC = () => {
     const [newTaskDeadline, setNewTaskDeadline] = useState<string>('');
     const [newTaskPriority, setNewTaskPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
     const [newTaskAssignedMembers, setNewTaskAssignedMembers] = useState<string[]>([]);
-    const [availableMembers, setAvailableMembers] = useState<Member[]>([]);
+    const [availableMembers, setAvailableMembers] = useState<IUser[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     // --- Fetch or Set Mock Members ---
     useEffect(() => {
-        setAvailableMembers(MOCK_TEAM_MEMBERS);
+        fetchProjectData();
+        getTeamMembers();
+        setAvailableMembers(teamMembers);
     }, []);
 
     // --- Reset form state when switching tabs ---
@@ -146,6 +205,77 @@ const ProjectManagementPage: React.FC = () => {
         return ids.map(id => availableMembers.find(mem => mem.id === id)?.name || 'Unknown').join(', ');
     };
 
+    const handleSubmitProject = async (event: any) => {
+        event.preventDefault();
+        setIsLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        // Validation
+        if (!projectName.trim()) {
+            setError("Project name is required");
+            setIsLoading(false);
+            return;
+        }
+
+        if (!projectDeadline) {
+            setError("Project deadline is required");
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            // Prepare project data according to schema
+            const projectData = {
+                name: projectName,
+                description: projectDescription,
+                endDate: new Date(projectDeadline),
+                startDate: new Date(), // Default to current date
+                status: 'Not Started',
+                createdBy: new Types.ObjectId(),
+                // Note: createdBy will be set on the server based on authenticated user
+                initialTasks: tasks.map(task => ({
+                    title: task.title,
+                    deadline: new Date(task.taskDeadline),
+                    priority: task.priority,
+                    assignedMembers: task.assignedMemberIds
+                }))
+            };
+
+            // Send POST request to your API endpoint
+            const response = await fetch('/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(projectData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Failed to create project' }));
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Project created successfully:', result);
+
+            // Show success message
+            setSuccessMessage(`Project "${projectName}" has been created successfully!`);
+
+            // Reset form
+            resetCreateForm();
+
+            // Optional: Switch back to view tab to see the newly created project
+            setActiveTab('view');
+            fetchProjectData();
+        } catch (err: any) {
+            console.error('Error creating project:', err);
+            setError(err.message || 'An unexpected error occurred while creating the project');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // --- Render Logic ---
     return (
         // Main container below the assumed layout header
@@ -187,12 +317,16 @@ const ProjectManagementPage: React.FC = () => {
                     {activeTab === 'view' && (
                         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 animate-fade-in">
                             <h2 className="text-2xl font-semibold mb-4 text-gray-700">Existing Projects</h2>
-                            {/* Placeholder: Add project listing component here */}
-                            <p className="text-gray-600">
-                                Your created projects will be displayed here. You would typically fetch project data and map over it to display project cards or a table.
-                            </p>
-                            {/* Example of where a project list might go */}
-                            {/* <ProjectList projects={fetchedProjects} /> */}
+                            {
+                                projects.map((item: projectInterface, id: number) => {
+                                    return (
+                                        <div key={id} className='border border-gray-300 rounded-2xl p-[1vw] flex flex-col justify-center items-start text-gray-700'>
+                                            <p className='font-bold'>{item.name}</p>
+                                            <p>{item.description}</p>
+                                        </div>
+                                    )
+                                })
+                            }
                         </div>
                     )}
 
@@ -304,7 +438,7 @@ const ProjectManagementPage: React.FC = () => {
                                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1.5 h-24 bg-white"
                                                 disabled={isLoading || availableMembers.length === 0}>
                                                 {availableMembers.length === 0 && <option disabled>Loading members...</option>}
-                                                {availableMembers.map(member => (<option key={member.id} value={member.id}>{member.name}</option>))}
+                                                {availableMembers.map((member, id) => (<option key={id} value={member.id}>{member.name}</option>))}
                                             </select>
                                             <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple.</p>
                                         </div>
@@ -319,6 +453,7 @@ const ProjectManagementPage: React.FC = () => {
                                 <div className="pt-5 text-right">
                                     <button type="submit"
                                         className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-60 transition-colors"
+                                        onClick={(e) => { handleSubmitProject(e) }}
                                         disabled={isLoading}>
                                         {isLoading ? 'Creating...' : 'Create Project'}
                                     </button>
