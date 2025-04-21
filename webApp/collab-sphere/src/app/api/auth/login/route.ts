@@ -75,6 +75,7 @@ export async function POST(request: Request) {
       maxAge: 60 * 60 * 24, // 1 day in seconds
       sameSite: 'lax',
     });
+
     
     // Return user data without password
     return NextResponse.json({
