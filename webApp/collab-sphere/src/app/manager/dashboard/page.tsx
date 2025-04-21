@@ -438,7 +438,7 @@ const ProjectManagementPage: React.FC = () => {
                                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-1.5 h-24 bg-white"
                                                 disabled={isLoading || availableMembers.length === 0}>
                                                 {availableMembers.length === 0 && <option disabled>Loading members...</option>}
-                                                {availableMembers.map((member, id) => (<option key={id} value={member.id}>{member.name}</option>))}
+                                                {availableMembers.map((member, id) => (<option key={id} value={member.name}>{member.name}</option>))}
                                             </select>
                                             <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple.</p>
                                         </div>

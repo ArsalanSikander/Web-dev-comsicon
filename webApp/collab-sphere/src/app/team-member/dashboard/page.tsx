@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, FolderKanban, Send, User, Loader2 } from 'lucide-react'; // Icons
+import { useSocket } from '@/app/components/socketProvider';
 
 // --- Frontend Data Types (Based on provided Mongoose Schemas/Interfaces) ---
 
@@ -86,7 +87,7 @@ const MOCK_PROJECTS_DATA: IProject[] = [
     createdAt: new Date('2024-04-01').toISOString(),
     updatedAt: new Date('2024-04-18').toISOString(),
   },
-    {
+  {
     _id: 'proj_delta_4',
     name: 'User Documentation',
     description: 'Create comprehensive user guides for the new software.',
@@ -115,10 +116,14 @@ const TeamMemberDashboard: React.FC = () => {
   // State for the message being typed in the chat input
   const [chatInput, setChatInput] = useState<string>('');
 
+  const socket = useSocket();
+
+
   // --- Fetch Assigned Projects ---
   useEffect(() => {
     // This function simulates fetching projects for the logged-in team member.
     // In a real application, replace this with an actual API call.
+
     const fetchUserProjects = async () => {
       setIsLoading(true);
       setError(null);
@@ -139,10 +144,15 @@ const TeamMemberDashboard: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Filter the mock data to get projects for 'current_user_id'
-        const userProjects = MOCK_PROJECTS_DATA.filter(project =>
-          project.teamMembers.includes('current_user_id')
-        );
-        setAssignedProjects(userProjects);
+        // const userProjects = MOCK_PROJECTS_DATA.filter(project =>
+        //   project.teamMembers.includes('current_user_id')
+        // );
+
+        const userProjects = await fetch('/api/get-team-mem-projects');
+
+        // setAssignedProjects(userProjects);
+        
+        
         console.log("Projects fetched successfully:", userProjects);
         // --- End: Replace with actual API call ---
 
@@ -167,6 +177,8 @@ const TeamMemberDashboard: React.FC = () => {
    */
   const handleProjectSelect = (project: IProject) => {
     setSelectedProject(project);
+    socket?.emit('disconnect');
+    socket?.emit('joinProjectRoom', (project._id));
     setChatInput(''); // Reset chat input when switching projects
     console.log(`Project selected for chat: ${project.name} (ID: ${project._id})`);
     // Future enhancement: Fetch chat history for the selected project here.
@@ -230,19 +242,17 @@ const TeamMemberDashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleProjectSelect(project)}
-                    className={`w-full flex justify-between items-center text-left px-3 py-2.5 rounded-md text-sm transition-all duration-150 ease-in-out group focus:outline-none focus:ring-2 focus:ring-indigo-300 ${
-                      selectedProject?._id === project._id
-                        ? 'bg-indigo-100 text-indigo-800 font-semibold shadow-sm'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                    }`}
+                    className={`w-full flex justify-between items-center text-left px-3 py-2.5 rounded-md text-sm transition-all duration-150 ease-in-out group focus:outline-none focus:ring-2 focus:ring-indigo-300 ${selectedProject?._id === project._id
+                      ? 'bg-indigo-100 text-indigo-800 font-semibold shadow-sm'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
                   >
                     <span className="truncate mr-2">{project.name}</span>
                     <MessageSquare
-                      className={`h-4 w-4 flex-shrink-0 transition-colors duration-150 ${
-                        selectedProject?._id === project._id
-                          ? 'text-indigo-600'
-                          : 'text-gray-400 group-hover:text-gray-600'
-                      }`}
+                      className={`h-4 w-4 flex-shrink-0 transition-colors duration-150 ${selectedProject?._id === project._id
+                        ? 'text-indigo-600'
+                        : 'text-gray-400 group-hover:text-gray-600'
+                        }`}
                     />
                   </button>
                 </li>
@@ -279,13 +289,13 @@ const TeamMemberDashboard: React.FC = () => {
                 --- Chat messages for {selectedProject.name} will appear here ---
               </div>
               {/* Example message rendering (static for demo) */}
-               <div className="flex items-start space-x-3 max-w-lg">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center font-semibold text-sm"><User size={16} /></span>
-                  <div className="bg-white p-3 rounded-lg rounded-tl-none shadow-sm border border-gray-100">
-                      <p className="text-sm font-medium text-purple-600">Dev Team Bot</p>
-                      <p className="text-sm text-gray-700">Welcome to the chat for project: "{selectedProject.name}".</p>
-                      <p className="text-xs text-gray-400 mt-1 text-right">Just now</p>
-                  </div>
+              <div className="flex items-start space-x-3 max-w-lg">
+                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-200 text-purple-700 flex items-center justify-center font-semibold text-sm"><User size={16} /></span>
+                <div className="bg-white p-3 rounded-lg rounded-tl-none shadow-sm border border-gray-100">
+                  <p className="text-sm font-medium text-purple-600">Dev Team Bot</p>
+                  <p className="text-sm text-gray-700">Welcome to the chat for project: "{selectedProject.name}".</p>
+                  <p className="text-xs text-gray-400 mt-1 text-right">Just now</p>
+                </div>
               </div>
               {/* Add more example messages or integrate real-time chat rendering */}
             </div>
