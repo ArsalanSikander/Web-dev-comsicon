@@ -3,10 +3,12 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import socketHandler from './sockets/index.js';
 import mongoose from 'mongoose';
+import { config } from "dotenv";
+
+config();
 
 const PORT = 3006;
-const MONGODB_URI = 'YOUR_MONGODB_CONNECTION_STRING'; // Replace with your actual connection string
-const DATABASE_NAME = 'your_database_name'; // Optional if in URI
+const MONGODB_URI = process.env.MONGODB_URI; // Replace with your actual connection string
 
 const httpServer = createServer((req, res) => {
     // manual cors headers
@@ -26,10 +28,10 @@ const httpServer = createServer((req, res) => {
 async function startSocketServer() {
     try {
         await mongoose.connect(MONGODB_URI, {
-            dbName: DATABASE_NAME, 
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
+
         console.log('Connected to MongoDB using Mongoose');
 
         const io = new Server(httpServer, {
