@@ -6,7 +6,6 @@ const chatMessageSchema = new mongoose.Schema({
     user_id: { type: String, required: true },
     content: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
-    // You can add more fields like 'readBy' array, etc.
 });
 
 // Create the ChatMessage model
